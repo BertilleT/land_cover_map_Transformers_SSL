@@ -5,6 +5,7 @@ import rasterio
 from pathlib import Path
 from utils import *
 import numpy as np
+from sklearn.model_selection import train_test_split
 
 folder_path = '../../data/flair1/'
 dict_classes = {
@@ -53,7 +54,6 @@ images = sorted(list(get_data_paths(Path(folder_path), 'IMG*.tif')), key=lambda 
 masks  = sorted(list(get_data_paths(Path(folder_path), 'MSK*.tif')), key=lambda x: int(x.split('_')[-1][:-4]))
 
 #split into train, validation and test
-from sklearn.model_selection import train_test_split
 images_train, images_test = train_test_split(images, test_size=0.2, random_state=42)
 masks_train, masks_test = train_test_split(masks, test_size=0.2, random_state=42)
 images_train, images_val = train_test_split(images_train, test_size=0.2, random_state=42)
