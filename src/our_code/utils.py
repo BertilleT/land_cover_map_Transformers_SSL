@@ -8,7 +8,7 @@ def get_data_paths(path, filter):
             yield path.resolve().as_posix()  
 
 #print one image and the mask corresponding besides
-def plot_image_mask_2(image, mask):
+def plot_image_mask_2(image, mask, colors, dict_classes):
     image = image.permute(1, 2, 0)  # Change shape from (C, H, W) to (H, W, C)
     fig, ax = plt.subplots(1, 2, figsize=(20, 10))
     ax[0].imshow(image)
