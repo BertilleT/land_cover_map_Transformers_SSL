@@ -3,17 +3,23 @@ import rasterio
 from pathlib import Path
 import numpy as np
 
-
 def get_data_paths(path, filter):
     for path in Path(path).rglob(filter):
             yield path.resolve().as_posix()  
 
 #print one image and the mask corresponding besides
-def plot_image_mask(image, mask):
+def plot_image_mask_2(image, mask):
+    image = image.permute(1, 2, 0)  # Change shape from (C, H, W) to (H, W, C)
     fig, ax = plt.subplots(1, 2, figsize=(20, 10))
-    ax[0].imshow(image[0,:,:])
+    ax[0].imshow(image)
     ax[1].imshow(mask[0,:,:])
+    #plot legend of classes in ax[1] for th classes present in the image
+    classes = np.unique(mask)
+    for c in classes:
+        ax[1].plot([], [], color=colors[c], label=dict_classes[c])
+    ax[1].legend()
     plt.show()
+    return None
 
 def read_image_file(file):
     with rasterio.open(file) as src:
