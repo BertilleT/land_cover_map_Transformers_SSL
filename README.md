@@ -2,7 +2,7 @@
 Object Recognition and Computer Vision project
 
 ## Data
-Flair1 data can be downloaded at https://ignf.github.io/FLAIR/  
+Flair1 data can be downloaded at https://ignf.github.io/FLAIR/. The data are taken from the department 71 and 34 (D071 and D034).
 Sentinel2 data can be downloaded at https://ieee-dataport.org/competitions/2020-ieee-grss-data-fusion-contest#files
 
 ## Src
