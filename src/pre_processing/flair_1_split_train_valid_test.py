@@ -3,11 +3,13 @@
 import matplotlib.pyplot as plt
 import rasterio
 from pathlib import Path
+import sys
+sys.path.append('..')
 from utils import *
 import numpy as np
 from sklearn.model_selection import train_test_split
 
-folder_path = '../../data/flair1/'
+folder_path = '../../data/flair1_fullset'
 dict_classes = {
 1   : 'building',
 2   : 'pervious surface',
@@ -67,7 +69,7 @@ masks_train, masks_test = train_test_split(masks, test_size=0.2, random_state=42
 images_train, images_val = train_test_split(images_train, test_size=0.2, random_state=42)
 masks_train, masks_val = train_test_split(masks_train, test_size=0.2, random_state=42)
 
-# save images and masks in dir train_500, val_100, test_100
+# save images and masks in dir train, val, test
 train_path = Path('../../data/flair1_fullset/train/')
 val_path = Path('../../data/flair1_fullset/val/')
 test_path = Path('../../data/flair1_fullset/test/')
@@ -100,15 +102,49 @@ for i in range(len(images_test)):
     with rasterio.open(test_path.joinpath('mask_'+str(i)+'.tif'), 'w', **mask.meta) as dst:
         dst.write(mask.read())
 
-'''#train classes balance
+masks_train = sorted(list(get_data_paths(Path('../../data/flair1_fullset/train'), 'mask*.tif')), key=lambda x: int(x.split('_')[-1][:-4]))
+masks_val = sorted(list(get_data_paths(Path('../../data/flair1_fullset/val'), 'mask*.tif')), key=lambda x: int(x.split('_')[-1][:-4]))
+masks_test = sorted(list(get_data_paths(Path('../../data/flair1_fullset/test'), 'mask*.tif')), key=lambda x: int(x.split('_')[-1][:-4]))
+
+#train classes balance
 per_classes_dict = per_classes(masks_train)
-plot_per_classes(per_classes_dict, dict_classes, colors, title = 'training set')
+plot_per_classes_2(per_classes_dict, dict_classes, colors, title = 'training set')
 
 #validation classes balance
 per_classes_dict = per_classes(masks_val)
-plot_per_classes(per_classes_dict, dict_classes, colors, title = 'validation set')
+plot_per_classes_2(per_classes_dict, dict_classes, colors, title = 'validation set')
 
 #test classes balance
 per_classes_dict = per_classes(masks_test)
-plot_per_classes(per_classes_dict, dict_classes, colors, title = 'test set')'''
+plot_per_classes_2(per_classes_dict, dict_classes, colors, title = 'test set')
 
+
+'''#check the consistensy of the dataset built handmade
+
+from pathlib import Path
+
+folder_path = 'drive/MyDrive/MVA/flair1_fullset/train'
+
+def get_data_paths(path, filter):
+    for path in Path(path).rglob(filter):
+            yield path.resolve().as_posix()
+
+img_files = sorted(list(get_data_paths(Path(folder_path), 'image*.tif')), key=lambda x: int(x.split('_')[-1][:-4]))
+mask_files = sorted(list(get_data_paths(Path(folder_path), 'mask*.tif')), key=lambda x: int(x.split('_')[-1][:-4]))
+
+print(len(img_files))
+print(len(mask_files))
+
+#check if one pair image/mask is not full, print
+for i in range(len(img_files)):
+    if img_files[i].split('_')[-1][:-4] != mask_files[i].split('_')[-1][:-4]:
+        print('error')
+        print(img_files[i])
+        break
+
+#count each time the pair image and mask is full
+count = 0
+for i in range(len(img_files)):
+    if img_files[i].split('_')[-1][:-4] == mask_files[i].split('_')[-1][:-4]:
+        count += 1
+print(count)'''
