@@ -6,6 +6,8 @@ from pathlib import Path
 import torch
 import torch.nn as nn
 from torchvision import transforms
+import matplotlib.colors as mcolors
+from PIL import Image
 
 __all__ = ['dict_classes_13', 'colors_13', 'get_data_paths', 'plot_image_mask', 'plot_image_mask_2', 'read_image_file', 'per_classes', 'plot_per_classes', 'plot_per_classes_2', 'plot_pred', 'Flair1Dataset', 'Flair1Dataset_SSL']
 dict_classes_13 = {
@@ -58,8 +60,6 @@ def plot_image_mask(image, mask, colors, dict_classes):
     ax[1].legend()
     plt.show()
     return None
-
-import matplotlib.colors as mcolors
 
 def plot_image_mask_2(image, mask, colors, dict_classes):
     mask = mask + 1  # Ensure mask classes start from 1
@@ -125,8 +125,6 @@ def plot_per_classes(class_per, dict_classes, colors, title = 'dataset'):
         yval = bar.get_height()
         plt.text(bar.get_x()+ .1, yval + .005, str(round(yval*100, 2)) + '%')
     plt.show()
-
-import matplotlib.pyplot as plt
 
 def plot_per_classes_2(class_per, dict_classes, colors, title='dataset'):
     # Filter out classes with 0.00 percentage
