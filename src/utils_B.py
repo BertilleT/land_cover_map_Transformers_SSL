@@ -7,8 +7,8 @@ import torch
 import torch.nn as nn
 from torchvision import transforms
 
-__all__ = ['dict_classes', 'colors', 'get_data_paths', 'plot_image_mask', 'plot_image_mask_2', 'read_image_file', 'per_classes', 'plot_per_classes', 'plot_per_classes_2', 'plot_pred', 'Flair1Dataset', 'Flair1Dataset_SSL']
-dict_classes = {
+__all__ = ['dict_classes_13', 'colors_13', 'get_data_paths', 'plot_image_mask', 'plot_image_mask_2', 'read_image_file', 'per_classes', 'plot_per_classes', 'plot_per_classes_2', 'plot_pred', 'Flair1Dataset', 'Flair1Dataset_SSL']
+dict_classes_13 = {
 1   : 'building',
 2   : 'pervious surface',
 3   : 'impervious surface',
@@ -21,15 +21,9 @@ dict_classes = {
 10  : 'herbaceous vegetation',
 11  : 'agricultural land',
 12  : 'plowed land',
-13  : 'swimming_pool',
-14  : 'snow',
-15  : 'clear cut',
-16  : 'mixed',
-17  : 'ligneous',
-18  : 'greenhouse',
-19  : 'other'}
+13  : 'other'}
 
-colors = {
+colors_13 = {
 1   : '#db0e9a',
 2   : '#938e7b',
 3   : '#f80c00',
@@ -37,18 +31,12 @@ colors = {
 5   : '#1553ae',
 6   : '#194a26',
 7   : '#46e483',
-8   : '#f3a60d',
-9   : '#660082',
+8   : '#758062',
+9   : '#6b486b',
 10  : '#55ff00',
 11  : '#fff30d',
 12  : '#e4df7c',
-13  : '#3de6eb',
-14  : '#ffffff',
-15  : '#8ab3a0',
-16  : '#6b714f',
-17  : '#c5dc42',
-18  : '#9999ff',
-19  : '#000000'}
+13  : '#000000'}
 
 def get_data_paths(path, filter):
     for path in Path(path).rglob(filter):
