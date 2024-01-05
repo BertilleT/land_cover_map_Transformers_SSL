@@ -68,6 +68,7 @@ def plot_image_mask_2(image, mask, colors, dict_classes):
     fig, ax = plt.subplots(1, 2, figsize=(20, 10))
     
     ax[0].imshow(image.numpy())  # Assuming image is a Tensor
+    ax[0].grid(False)
 
     # Extract unique classes present in the mask
     classes = np.unique(mask.numpy())  # Assuming mask is a Tensor
@@ -80,6 +81,7 @@ def plot_image_mask_2(image, mask, colors, dict_classes):
     
     # Display the mask using the custom colormap
     ax[1].imshow(mask.numpy(), cmap=custom_cmap)
+    ax[1].grid(False)
     
     # Add the legend entries for the classes present in the mask
     for c in classes:
@@ -164,24 +166,24 @@ def plot_pred(img, pred, target, dict_classes, colors):
     fig, ax = plt.subplots(1, 3, figsize=(20, 10))
     img = img[0:3, :, :]
     ax[0].imshow(img.permute(1, 2, 0))
+    ax[0].grid(False)
     pred_single_channel = np.argmax(pred.numpy(), axis=0)
     pred_single_channel = pred_single_channel + 1
     target = target + 1
-    ax[1].imshow(pred_single_channel)
-    ax[2].imshow(target)
     pred_classes = np.unique(pred_single_channel)  
     target_classes = np.unique(target)  
 
     pred_legend_colors = [colors[c] for c in pred_classes]
     target_legend_colors = [colors[c] for c in target_classes]
+
     pred_custom_cmap = mcolors.ListedColormap(pred_legend_colors)
     target_custom_cmap = mcolors.ListedColormap(target_legend_colors)
     ax[1].imshow(pred_single_channel, cmap=pred_custom_cmap)
+    ax[1].grid(False)
     ax[2].imshow(target, cmap=target_custom_cmap)
-    
+    ax[2].grid(False)
     # Add the legend entries for the classes present in the mask
     for c in pred_classes:
-        print(c)
         ax[1].plot([], [], color=colors[c], label=dict_classes[c])
     for c in target_classes:
         ax[2].plot([], [], color=colors[c], label=dict_classes[c])
@@ -239,19 +241,19 @@ class Flair1Dataset(torch.utils.data.Dataset):
         label = label.long()
 
         #Turn data and label into float between 0 and 1
-        # data = data / 255
+        data_tensor = data_tensor / 255.0
         # label = label / 255
         return data_tensor, label
 
     def get_per_per_class(self):
-        class_per = dict.fromkeys(range(1,20), 0)
+        class_per = dict.fromkeys(range(1,13), 0)
         total_pixels = 0
         for i in range(len(self)):
             _, label = self[i]
-            for j in range(1,20):
+            for j in range(1,13):
                 class_per[j] += torch.sum(label == j).item()
             total_pixels += label.numel()
-        for j in range(1,20):
+        for j in range(1,13):
             class_per[j] = class_per[j] / total_pixels
         return class_per
 
@@ -268,7 +270,7 @@ class Flair1Dataset_SSL(torch.utils.data.Dataset):
         self.multimodal = multimodal
         if multimodal == False:
             self.n_inputs = 3
-        else: 
+        else:
             self.n_inputs_rgb = 3
             self.n_inputs_ir_el = 2
 
@@ -283,27 +285,20 @@ class Flair1Dataset_SSL(torch.utils.data.Dataset):
         label = rasterio.open(mask_path).read()
         label = label - 1
 
-        # Convert data to PIL Image for resizing
-        data_all_channels = np.transpose(data_all_channels, (1, 2, 0))
-        data_all_channels = transforms.ToPILImage()(data_all_channels)
-        data_all_channels = self.resize_transform(data_all_channels)
-        # Convert back to tensor
-        data_all_channels = transforms.ToTensor()(data_all_channels)
-
         data = rasterio.open(img_path).read()
         img['rgb'] = data[0:3,:, :]
         img['rgb'] = np.transpose(img['rgb'], (1, 2, 0))
         img['rgb'] = transforms.ToPILImage()(img['rgb'])
         img['rgb'] = self.resize_transform(img['rgb'])
         # Convert back to tensor
-        img['rgb'] = transforms.ToTensor()(data_all_channels)
+        img['rgb'] = transforms.ToTensor()(img['rgb'])
 
         img['ir_el'] = data[3:,:, :]
         img['ir_el'] = np.transpose(img['ir_el'], (1, 2, 0))
         img['ir_el'] = transforms.ToPILImage()(img['ir_el'])
         img['ir_el'] = self.resize_transform(img['ir_el'])
         # Convert back to tensor
-        img['ir_el'] = transforms.ToTensor()(data_all_channels)
+        img['ir_el'] = transforms.ToTensor()(img['ir_el'])
 
         # Convert label to PIL Image for resizing
         label = np.transpose(label, (1, 2, 0))
@@ -324,7 +319,7 @@ class Flair1Dataset_SSL(torch.utils.data.Dataset):
         total_pixels = 0
         for i in range(len(self)):
             _, label = self[i]
-            for j in range(1,13):
+            for j in range(1,14):
                 class_per[j] += torch.sum(label == j).item()
             total_pixels += label.numel()
         for j in range(1,14):
