@@ -76,3 +76,40 @@ def print_metrics(miou, ious):
     for k, v in zip(classes, ious):
         print ("{:<25} {:<15}".format(k, v))
     print('\n\n')
+
+    import os
+from PIL import Image
+from torch.utils.data import Dataset, DataLoader
+from torchvision import transforms
+
+import os
+from PIL import Image
+from torch.utils.data import Dataset, DataLoader
+from torchvision import transforms
+
+class Dataset_Flair1(Dataset):
+    def __init__(self, root_dir, transform=None):
+        """
+        Args:
+            root_dir (string): Directory with all the images and masks.
+            transform (callable, optional): Optional transform to be applied on a sample.
+        """
+        self.root_dir = root_dir
+        self.transform = transform
+        self.images = sorted([os.path.join(root_dir, x) for x in os.listdir(root_dir) if x.startswith('image')])
+        self.masks = sorted([os.path.join(root_dir, x) for x in os.listdir(root_dir) if x.startswith('mask')])
+
+    def __len__(self):
+        return len(self.images)
+
+    def __getitem__(self, idx):
+        # Load the image as is, without converting to RGB
+        image = Image.open(self.images[idx])
+        mask = Image.open(self.masks[idx]).convert('L')  # Convert mask to grayscale if needed
+
+        if self.transform:
+            image = self.transform(image)
+            mask = self.transform(mask)
+
+        return image, mask
+

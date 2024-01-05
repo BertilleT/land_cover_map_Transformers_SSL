@@ -105,3 +105,33 @@ class Predict_Dataset(Dataset):
            
             return {"img": torch.as_tensor(img, dtype=torch.float),
                     "id": '/'.join(image_file.split('/')[-4:])}  
+
+
+import os
+from PIL import Image
+from torch.utils.data import Dataset
+
+class Dataset_Flair1(Dataset):
+    def __init__(self, root_dir, transform=None):
+        """
+        Args:
+            root_dir (string): Directory with all the images and masks.
+            transform (callable, optional): Optional transform to be applied on a sample.
+        """
+        self.root_dir = root_dir
+        self.transform = transform
+        self.images = sorted([os.path.join(root_dir, x) for x in os.listdir(root_dir) if x.startswith('image')])
+        self.masks = sorted([os.path.join(root_dir, x) for x in os.listdir(root_dir) if x.startswith('mask')])
+
+    def __len__(self):
+        return len(self.images)
+
+    def __getitem__(self, idx):
+        image = Image.open(self.images[idx]).convert('RGB')
+        mask = Image.open(self.masks[idx]).convert('L')  # Convert mask to grayscale
+
+        if self.transform:
+            image = self.transform(image)
+            mask = self.transform(mask)
+
+        return image, mask

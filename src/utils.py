@@ -454,7 +454,22 @@ def print_metrics(miou, ious):
         print ("{:<25} {:<15}".format(k, v))
     print('\n\n')
 
-    import torch
+
+def print_metrics_Flair1(miou, ious):
+    classes = ['building', 'pervious surface','impervious surface',
+               'bare soil','water','coniferous','deciduous','brushwood','vineyard',
+               'herbaceous vegetation','agricultural land','plowed land','other']
+    print('\n')
+    print('-'*40)
+    print(' '*8, 'Model mIoU : ', round(miou, 4))
+    print('-'*40)
+    print ("{:<25} {:<15}".format('Class','iou'))
+    print('-'*40)
+    for k, v in zip(classes, ious):
+        print ("{:<25} {:<15}".format(k, v))
+    print('\n\n')
+
+
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 import os
@@ -499,3 +514,4 @@ def predict_and_save(test_data_path, save_path, model, device='cuda'):
             np.save(save_file_path, predicted)
 
     print("Predictions successfully saved.")
+
