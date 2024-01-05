@@ -45,6 +45,7 @@ def get_data_paths(path, filter):
 #print one image and the mask corresponding besides
 def plot_image_mask(image, mask, colors, dict_classes):
     mask = mask+1
+    image = image[0:3, :, :]
     image = image.permute(1, 2, 0)  # Change shape from (C, H, W) to (H, W, C)
     fig, ax = plt.subplots(1, 2, figsize=(20, 10))
     print(image.shape)
@@ -62,6 +63,7 @@ import matplotlib.colors as mcolors
 
 def plot_image_mask_2(image, mask, colors, dict_classes):
     mask = mask + 1  # Ensure mask classes start from 1
+    image = image[0:3, :, :]
     image = image.permute(1, 2, 0)  # Change shape from (C, H, W) to (H, W, C)
     fig, ax = plt.subplots(1, 2, figsize=(20, 10))
     
@@ -117,7 +119,7 @@ def plot_per_classes(class_per, dict_classes, colors, title = 'dataset'):
 
     bars = plt.bar(class_per.keys(), class_per.values(), color=colors.values())
     plt.title('Class percentage in ' + title)
-    plt.xticks(range(1,20), dict_classes.values(), rotation=90)
+    plt.xticks(range(1,13), dict_classes.values(), rotation=90)
     plt.ylabel('percentage')
     for bar in bars:
         yval = bar.get_height()
@@ -162,6 +164,7 @@ def plot_per_classes_2(class_per, dict_classes, colors, title='dataset'):
 #create a function to plot image, prediction and true values
 def plot_pred(img, pred, target, dict_classes, colors):
     fig, ax = plt.subplots(1, 3, figsize=(20, 10))
+    img = img[0:3, :, :]
     ax[0].imshow(img.permute(1, 2, 0))
     pred_single_channel = np.argmax(pred.numpy(), axis=0)
     pred_single_channel = pred_single_channel + 1
@@ -191,16 +194,16 @@ def plot_pred(img, pred, target, dict_classes, colors):
     return None
 
 class Flair1Dataset(torch.utils.data.Dataset):
-    def __init__(self, folder_path, size = 256, seed = 42):
+    def __init__(self, folder_path, seed = 42):
         super(Flair1Dataset, self).__init__()
-        self.resize_transform = transforms.Resize((size, size))
-        self.resize_transform_l = transforms.Resize((size, size), interpolation=transforms.InterpolationMode.NEAREST)
+        self.resize_transform = transforms.Resize((224, 224))
+        self.resize_transform_l = transforms.Resize((224, 224), interpolation=transforms.InterpolationMode.NEAREST)
         self.folder_path = folder_path
         self.img_files = sorted(list(get_data_paths(Path(self.folder_path), 'image*.tif')), key=lambda x: int(x.split('_')[-1][:-4]))
         self.mask_files = sorted(list(get_data_paths(Path(self.folder_path), 'mask*.tif')), key=lambda x: int(x.split('_')[-1][:-4]))
         self.total = len(self.img_files)
-        self.n_classes = len(dict_classes)
-        self.n_inputs = 3
+        self.n_classes = 13
+        self.n_inputs = 5
 
     def __len__(self):
         return self.total
@@ -210,15 +213,23 @@ class Flair1Dataset(torch.utils.data.Dataset):
         mask_path = self.mask_files[idx]
 
         data = rasterio.open(img_path).read()
-        data = data[0:3, :, :]
+        #data = data[0:3, :, :]
         label = rasterio.open(mask_path).read()
         label = label - 1
-        # Convert data to PIL Image for resizing
-        data = np.transpose(data, (1, 2, 0))
-        data = transforms.ToPILImage()(data)
-        data = self.resize_transform(data)
-        # Convert back to tensor
-        data = transforms.ToTensor()(data)
+
+        # Process each channel of the image separately
+        data_processed = []
+        for i in range(data.shape[0]):  # Loop over the channels
+            channel = data[i]
+            channel_image = Image.fromarray(channel)
+            transformed_channel = self.resize_transform(channel_image)
+            data_processed.append(np.array(transformed_channel))
+
+        # Stack the processed channels back together
+        data_stacked = np.stack(data_processed, axis=0)
+
+        # Convert the processed image back to tensor
+        data_tensor = torch.tensor(data_stacked, dtype=torch.float32)
 
         # Convert label to PIL Image for resizing
         label = np.transpose(label, (1, 2, 0))
@@ -232,7 +243,7 @@ class Flair1Dataset(torch.utils.data.Dataset):
         #Turn data and label into float between 0 and 1
         # data = data / 255
         # label = label / 255
-        return data, label
+        return data_tensor, label
 
     def get_per_per_class(self):
         class_per = dict.fromkeys(range(1,20), 0)
@@ -246,7 +257,6 @@ class Flair1Dataset(torch.utils.data.Dataset):
             class_per[j] = class_per[j] / total_pixels
         return class_per
 
-
 class Flair1Dataset_SSL(torch.utils.data.Dataset):
     def __init__(self, folder_path, size = 256, multimodal = False, seed = 42):
         super(Flair1Dataset_SSL, self).__init__()
@@ -256,7 +266,7 @@ class Flair1Dataset_SSL(torch.utils.data.Dataset):
         self.img_files = sorted(list(get_data_paths(Path(self.folder_path), 'image*.tif')), key=lambda x: int(x.split('_')[-1][:-4]))
         self.mask_files = sorted(list(get_data_paths(Path(self.folder_path), 'mask*.tif')), key=lambda x: int(x.split('_')[-1][:-4]))
         self.total = len(self.img_files)
-        self.n_classes = len(dict_classes)
+        self.n_classes = len(dict_classes_13)
         self.multimodal = multimodal
         if multimodal == False:
             self.n_inputs = 3
