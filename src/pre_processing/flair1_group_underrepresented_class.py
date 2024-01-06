@@ -2,7 +2,7 @@ import rasterio
 from pathlib import Path
 import sys
 sys.path.append('..')
-from utils import *
+from utils_B import *
 
 dict_classes = {
 1   : 'building',

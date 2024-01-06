@@ -5,7 +5,7 @@ import rasterio
 from pathlib import Path
 import sys
 sys.path.append('..')
-from utils import *
+from utils_B import *
 import numpy as np
 from sklearn.model_selection import train_test_split
 

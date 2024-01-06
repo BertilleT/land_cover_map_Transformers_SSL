@@ -3,7 +3,7 @@
 import matplotlib.pyplot as plt
 import rasterio
 from pathlib import Path
-from utils import *
+from utils_B import *
 import numpy as np
 from sklearn.model_selection import train_test_split
 
