@@ -6,6 +6,12 @@ import albumentations as A
 from pathlib import Path
 import random
 from PIL import Image, ImageFilter
+from torchvision import datasets, transforms
+from torch.utils.data import DataLoader, Dataset
+import os
+import cv2
+import rasterio
+
 
 class AlbumentationsToTorchTransform:
     """Take a list of Albumentation transforms and apply them
@@ -401,45 +407,48 @@ class PixelwiseMetrics(object):
         cw_acc = self.get_classwise_accuracy()
         return np.mean(list(cw_acc.values()))
     
-import re
-import numpy as np
+
+
 from PIL import Image
 from sklearn.metrics import confusion_matrix
 
 
-def generate_miou(path_truth: str, path_pred: str) -> list:
 
-    #################################################################################################
-    def get_data_paths (path, filter):
+
+def generate_miou_flair(test_dataset, path_pred: str, target_size=(224, 224)) -> tuple:
+    def get_data_paths(path, filter):
         for path in Path(path).rglob(filter):
-             yield path.resolve().as_posix()
+            yield path.resolve().as_posix()
 
     def calc_miou(cm_array):
-        m = np.nan
-        with np.errstate(divide='ignore', invalid='ignore'):
-            ious = np.diag(cm_array) / (cm_array.sum(0) + cm_array.sum(1) - np.diag(cm_array))
-        m = np.nansum(ious[:-1]) / (np.logical_not(np.isnan(ious[:-1]))).sum()
-        return m.astype(float), ious[:-1]
+        if cm_array.ndim != 2:
+            raise ValueError(f"Confusion matrix is not 2D: {cm_array.shape}")
+        ious = np.diag(cm_array) / (cm_array.sum(0) + cm_array.sum(1) - np.diag(cm_array))
+        m = np.nanmean(ious[:-1])
+        return m, ious[:-1]
 
-    #################################################################################################
+    preds_images = sorted(list(get_data_paths(Path(path_pred), 'prediction*.npy')), key=lambda x: int(x.split('_')[-1][:-4]))
 
-    truth_images = sorted(list(get_data_paths(Path(path_truth), 'mask*.tif')), key=lambda x: int(x.split('_')[-1][:-4]))
-    preds_images  = sorted(list(get_data_paths(Path(path_pred), 'image*.tif')), key=lambda x: int(x.split('_')[-1][:-4]))
-    if len(truth_images) != len(preds_images):
-        print('[WARNING !] mismatch number of predictions and test files.')
-
+    if len(test_dataset) != len(preds_images):
+        print('[WARNING !] Mismatch number of predictions and test files.')
+    fr = 0
     patch_confusion_matrices = []
+    for u in range(len(test_dataset)):
+      
+        preds = np.load(preds_images[u])
+        if preds.ndim != 2:
+            raise ValueError(f"Prediction image is not 2D: {preds.shape}")
 
-    for u in range(len(truth_images)):
-        target = np.array(Image.open(truth_images[u]))-1 # -1 as model predictions start at 0 and turth at 1.
-        target[target>12]=12  ### remapping masks to reduced baseline nomenclature.
-        preds = np.array(Image.open(preds_images[u]))
-        patch_confusion_matrices.append(confusion_matrix(target.flatten(), preds.flatten(), labels=list(range(13))))
+        cm = confusion_matrix(test_dataset[u]['msk'].flatten(), preds.flatten(), labels=list(range(13)))
+        patch_confusion_matrices.append(cm)
 
     sum_confmat = np.sum(patch_confusion_matrices, axis=0)
-    mIou, ious = calc_miou(sum_confmat)
+    if sum_confmat.ndim != 2:
+        raise ValueError(f"Summed confusion matrix is not 2D: {sum_confmat.shape}")
 
+    mIou, ious = calc_miou(sum_confmat)
     return mIou, ious
+
 
 def print_metrics(miou, ious):
     classes = ["Forest", "Shrubland", "Grassland", "Wetlands", "Croplands", "Urban/Built-up",
@@ -449,6 +458,19 @@ def print_metrics(miou, ious):
     print(' '*8, 'Model mIoU : ', round(miou, 4))
     print('-'*40)
     print ("{:<25} {:<15}".format('Class','iou'))
+    print('-'*40)
+    for k, v in zip(classes, ious):
+        print ("{:<25} {:<15}".format(k, v))
+    print('\n\n')
+
+def print_metrics_acc(miou, ious):
+    classes = ["Forest", "Shrubland", "Grassland", "Wetlands", "Croplands", "Urban/Built-up",
+               "Barren", "Water","Invalid"]
+    print('\n')
+    print('-'*40)
+    print(' '*8, 'Model Accuracy : ', round(miou, 4))
+    print('-'*40)
+    print ("{:<25} {:<15}".format('Class','accuracy'))
     print('-'*40)
     for k, v in zip(classes, ious):
         print ("{:<25} {:<15}".format(k, v))
@@ -469,49 +491,180 @@ def print_metrics_Flair1(miou, ious):
         print ("{:<25} {:<15}".format(k, v))
     print('\n\n')
 
+def print_metrics_Flair1_acc(miou, ious):
+    classes = ['building', 'pervious surface','impervious surface',
+               'bare soil','water','coniferous','deciduous','brushwood','vineyard',
+               'herbaceous vegetation','agricultural land','plowed land','other']
+    print('\n')
+    print('-'*40)
+    print(' '*8, 'Model accuracy : ', round(miou, 4))
+    print('-'*40)
+    print ("{:<25} {:<15}".format('Class','accuracy'))
+    print('-'*40)
+    for k, v in zip(classes, ious):
+        print ("{:<25} {:<15}".format(k, v))
+    print('\n\n')
 
-from torchvision import datasets, transforms
-from torch.utils.data import DataLoader
-import os
 
-def predict_and_save(test_data_path, save_path, model, device='cuda'):
+def predict_and_save_flair(test_dataset, save_path, model, device='cuda'):
     """
     Function to perform predictions on a test dataset and save the results.
 
     Args:
-    test_data_path (str): Path to the test dataset.
-    save_path (str): Path where to save the prediction results.
-    model (torch.nn.Module): Pre-trained model for making predictions.
-    device (str): Device to run the predictions on ('cuda' or 'cpu').
-
-    Returns:
-    None
+        test_loader (DataLoader): DataLoader for the test dataset.
+        save_path (str): Path where to save the prediction results.
+        model (torch.nn.Module): Pre-trained model for making predictions.
+        device (str): Device to run the predictions on ('cuda' or 'cpu').
     """
-
-    # Set the model to evaluation mode and to the specified device
     model.eval()
     model.to(device)
 
-    # Load the test dataset
-    test_dataset = datasets.ImageFolder(root=test_data_path, transform=transforms.ToTensor())
-    test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
-
-    # Check if the save path exists, if not create it
     if not os.path.exists(save_path):
         os.makedirs(save_path)
 
-    # Perform predictions and save them
     with torch.no_grad():
-        for i, (inputs, _) in enumerate(test_loader):
-            inputs = inputs.to(device)
-            outputs = model(inputs)
+        for i in range(len(test_dataset)):
+            img = torch.unsqueeze(test_dataset[i]['img'], 0).to(device)
+            outputs = model(img)
 
-            # Convert predictions to a suitable format (e.g., numpy array)
-            predicted = outputs.cpu().numpy()
+            # Apply argmax to get the most probable class for each pixel
+            predicted = torch.argmax(outputs, dim=1).squeeze(0).cpu().numpy()
 
-            # Save the results
+            # Ensure prediction is a 2D array
+            if predicted.ndim != 2:
+                raise ValueError(f"Predicted image is not 2D: {predicted.shape}")
+
             save_file_path = os.path.join(save_path, f'prediction_{i}.npy')
             np.save(save_file_path, predicted)
 
     print("Predictions successfully saved.")
 
+
+def calculate_accuracy(conf_matrix):
+    """Calculate classwise and overall accuracy from the confusion matrix."""
+    classwise_accuracy = np.diag(conf_matrix) / np.sum(conf_matrix, axis=1)
+    overall_accuracy = np.sum(np.diag(conf_matrix)) / np.sum(conf_matrix)
+    return classwise_accuracy, overall_accuracy
+
+def generate_metrics_acc(path_truth: str, path_pred: str) -> dict:
+    def get_data_paths(path, filter):
+        for path in Path(path).rglob(filter):
+            yield path.resolve().as_posix()
+
+    truth_images = sorted(list(get_data_paths(Path(path_truth), 'mask*.tif')), key=lambda x: int(x.split('_')[-1][:-4]))
+    preds_images = sorted(list(get_data_paths(Path(path_pred), 'prediction*.tif')), key=lambda x: int(x.split('_')[-1][:-4]))
+    
+    if len(truth_images) != len(preds_images):
+        print('[WARNING !] Mismatch number of predictions and test files.')
+
+    patch_confusion_matrices = []
+
+    for target_path, preds_path in zip(truth_images, preds_images):
+        target = np.array(Image.open(target_path)) - 1  # -1 as model predictions start at 0 and truth at 1.
+        target[target > 12] = 12  # Remapping masks to reduced baseline nomenclature.
+        preds = np.array(Image.open(preds_path))
+        patch_confusion_matrices.append(confusion_matrix(target.flatten(), preds.flatten(), labels=list(range(13))))
+
+    sum_confmat = np.sum(patch_confusion_matrices, axis=0)
+    classwise_accuracy, overall_accuracy = calculate_accuracy(sum_confmat)
+
+    return {
+        "classwise_accuracy": classwise_accuracy,
+        "overall_accuracy": overall_accuracy
+    }
+
+
+from skimage import img_as_float
+
+class Dataset_Flair1(Dataset):
+    def __init__(self, root_dir, num_classes=13, size=224, transform=None):
+        """
+        Args:
+            root_dir (string): Directory with all the images and masks.
+            num_classes (int): Number of classes for the segmentation masks.
+            size (int): Size to resize the images and masks to.
+            transform (callable, optional): Optional transform to be applied on a sample.
+        """
+        self.root_dir = root_dir
+        self.num_classes = num_classes
+        self.size = size
+        self.transform = transform
+        self.images = sorted([os.path.join(root_dir, x) for x in os.listdir(root_dir) if x.startswith('image')])
+        self.masks = sorted([os.path.join(root_dir, x) for x in os.listdir(root_dir) if x.startswith('mask')])
+
+    def read_img(self, raster_file: str) -> np.ndarray:
+        with rasterio.open(raster_file) as src_img:
+            array = src_img.read()
+            return array
+
+    def read_msk(self, raster_file: str) -> np.ndarray:
+        with rasterio.open(raster_file) as src_msk:
+            array = src_msk.read()[0]  # Read the first channel
+            array = np.clip(array, 0, self.num_classes) - 1
+
+        return array
+
+    def __len__(self):
+        return len(self.images)
+
+    def resize_image(self, image, size):
+        """Resize an image with multiple channels."""
+        resized_channels = [cv2.resize(image[:,:,i], (size, size), interpolation=cv2.INTER_AREA) for i in range(image.shape[2])]
+        return np.stack(resized_channels, axis=-1)
+
+    def __getitem__(self, idx):
+        image_file = self.images[idx]
+        mask_file = self.masks[idx]
+
+        img = self.read_img(raster_file=image_file)
+        img = img_as_float(img.swapaxes(0, 2).swapaxes(0, 1))  # Convert to HxWxC format
+        img = self.resize_image(img, self.size)  # Resize all channels
+        img = torch.from_numpy(img).float().permute(2, 0, 1)  # Convert to tensor and reorder dimensions to CxHxW
+
+        msk = self.read_msk(raster_file=mask_file)
+        msk = cv2.resize(msk, (self.size, self.size), interpolation=cv2.INTER_NEAREST)
+        msk = torch.from_numpy(msk).long()  # Mask should be of type long
+
+        if self.transform:
+            transformed_sample = self.transform({"image": img, "mask": msk})
+            img, msk = transformed_sample['image'], transformed_sample['mask']
+
+        return {"img": img, "msk": msk}
+    
+
+
+def calculate_accuracy(conf_matrix):
+    """Calculate classwise and overall accuracy from the confusion matrix."""
+    classwise_accuracy = np.diag(conf_matrix) / np.sum(conf_matrix, axis=1)
+    overall_accuracy = np.sum(np.diag(conf_matrix)) / np.sum(conf_matrix)
+    return classwise_accuracy, overall_accuracy
+
+def generate_metrics_acc(test_dataset, path_pred: str) -> dict:
+    def get_data_paths(path, filter):
+        for path in Path(path).rglob(filter):
+            yield path.resolve().as_posix()
+
+    preds_images = sorted(list(get_data_paths(Path(path_pred), 'prediction*.npy')), key=lambda x: int(x.split('_')[-1][:-4]))
+    
+    if len(test_dataset) != len(preds_images):
+        print('[WARNING !] Mismatch number of predictions and test files.')
+
+    patch_confusion_matrices = []
+
+    for i, (target_data, preds_path) in enumerate(zip(test_dataset, preds_images)):
+        target = target_data['msk'].numpy()  # Assuming 'msk' is the key for mask data
+        preds = np.load(preds_path)
+
+        # Ensure both target and preds are 2D arrays
+        if target.ndim != 2 or preds.ndim != 2:
+            raise ValueError(f"Target or prediction image at index {i} is not 2D.")
+
+        patch_confusion_matrices.append(confusion_matrix(target.flatten(), preds.flatten(), labels=list(range(13))))
+
+    sum_confmat = np.sum(patch_confusion_matrices, axis=0)
+    classwise_accuracy, overall_accuracy = calculate_accuracy(sum_confmat)
+
+    return {
+        "classwise_accuracy": classwise_accuracy,
+        "overall_accuracy": overall_accuracy
+    }

@@ -77,12 +77,9 @@ def print_metrics(miou, ious):
         print ("{:<25} {:<15}".format(k, v))
     print('\n\n')
 
-    import os
-from PIL import Image
-from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms
-
+ 
 import os
+import cv2
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
@@ -104,7 +101,7 @@ class Dataset_Flair1(Dataset):
 
     def __getitem__(self, idx):
         # Load the image as is, without converting to RGB
-        image = Image.open(self.images[idx])
+        image = cv2.imread(self.images[idx], cv2.IMREAD_UNCHANGED)
         mask = Image.open(self.masks[idx]).convert('L')  # Convert mask to grayscale if needed
 
         if self.transform:
