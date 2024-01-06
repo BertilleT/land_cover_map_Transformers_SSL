@@ -415,7 +415,7 @@ from sklearn.metrics import confusion_matrix
 
 
 
-def generate_miou_flair(test_dataset, path_pred: str, target_size=(224, 224)) -> tuple:
+def generate_miou(test_dataset, path_pred: str,  S: str) -> tuple:
     def get_data_paths(path, filter):
         for path in Path(path).rglob(filter):
             yield path.resolve().as_posix()
@@ -439,7 +439,7 @@ def generate_miou_flair(test_dataset, path_pred: str, target_size=(224, 224)) ->
         if preds.ndim != 2:
             raise ValueError(f"Prediction image is not 2D: {preds.shape}")
 
-        cm = confusion_matrix(test_dataset[u]['msk'].flatten(), preds.flatten(), labels=list(range(13)))
+        cm = confusion_matrix(test_dataset[u][S].flatten(), preds.flatten(), labels=list(range(13)))
         patch_confusion_matrices.append(cm)
 
     sum_confmat = np.sum(patch_confusion_matrices, axis=0)
@@ -540,39 +540,6 @@ def predict_and_save_flair(test_dataset, save_path, model, device='cuda'):
     print("Predictions successfully saved.")
 
 
-def calculate_accuracy(conf_matrix):
-    """Calculate classwise and overall accuracy from the confusion matrix."""
-    classwise_accuracy = np.diag(conf_matrix) / np.sum(conf_matrix, axis=1)
-    overall_accuracy = np.sum(np.diag(conf_matrix)) / np.sum(conf_matrix)
-    return classwise_accuracy, overall_accuracy
-
-def generate_metrics_acc(path_truth: str, path_pred: str) -> dict:
-    def get_data_paths(path, filter):
-        for path in Path(path).rglob(filter):
-            yield path.resolve().as_posix()
-
-    truth_images = sorted(list(get_data_paths(Path(path_truth), 'mask*.tif')), key=lambda x: int(x.split('_')[-1][:-4]))
-    preds_images = sorted(list(get_data_paths(Path(path_pred), 'prediction*.tif')), key=lambda x: int(x.split('_')[-1][:-4]))
-    
-    if len(truth_images) != len(preds_images):
-        print('[WARNING !] Mismatch number of predictions and test files.')
-
-    patch_confusion_matrices = []
-
-    for target_path, preds_path in zip(truth_images, preds_images):
-        target = np.array(Image.open(target_path)) - 1  # -1 as model predictions start at 0 and truth at 1.
-        target[target > 12] = 12  # Remapping masks to reduced baseline nomenclature.
-        preds = np.array(Image.open(preds_path))
-        patch_confusion_matrices.append(confusion_matrix(target.flatten(), preds.flatten(), labels=list(range(13))))
-
-    sum_confmat = np.sum(patch_confusion_matrices, axis=0)
-    classwise_accuracy, overall_accuracy = calculate_accuracy(sum_confmat)
-
-    return {
-        "classwise_accuracy": classwise_accuracy,
-        "overall_accuracy": overall_accuracy
-    }
-
 
 from skimage import img_as_float
 
@@ -639,7 +606,7 @@ def calculate_accuracy(conf_matrix):
     overall_accuracy = np.sum(np.diag(conf_matrix)) / np.sum(conf_matrix)
     return classwise_accuracy, overall_accuracy
 
-def generate_metrics_acc(test_dataset, path_pred: str) -> dict:
+def generate_metrics_acc(test_dataset, path_pred: str, S: str) -> dict:
     def get_data_paths(path, filter):
         for path in Path(path).rglob(filter):
             yield path.resolve().as_posix()
@@ -652,7 +619,7 @@ def generate_metrics_acc(test_dataset, path_pred: str) -> dict:
     patch_confusion_matrices = []
 
     for i, (target_data, preds_path) in enumerate(zip(test_dataset, preds_images)):
-        target = target_data['msk'].numpy()  # Assuming 'msk' is the key for mask data
+        target = target_data[S].numpy()  # Assuming 'msk' is the key for mask data
         preds = np.load(preds_path)
 
         # Ensure both target and preds are 2D arrays
