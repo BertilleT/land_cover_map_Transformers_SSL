@@ -19,10 +19,11 @@ The pre-trained model for Swin-T + SSL should be donwloaded and put in this fold
 * configs contains configuration files
 * notebooks contains the notebooks of every models run together with the results. It is the most important folder of the Github. The notebooks are split into folder flair1 and folder sentinel depending on the dataset used. 
 * pre-processing contains files to explore data, and to split the flair1 folder into train, val and test folders. 
-* RESNET_UNet contains scripts usefull for the RESNETUNet notebook
-* Swin-T_SSL contains scripts usefull for the Swin-t_SSL notebook
-* SwinUNet contains scripts usefull for the SwinUNet notebook
+* RESNET_UNet contains scripts usefull for the RESNETUNet notebook.
+* SwinUNet contains scripts usefull for the SwinUNet notebook.
 * tools contains scripts for the dataset classes of Sentinel, Flair1, and script with metrics to evaluate the models. 
+* Transformer_SSL contains scripts usefull for the Swin-t_SSL notebook. 
+Imports might need additional work to be efficiently imported in notebooks. 
 
 ## Reused github
 * UNet: https://github.com/lukasliebel/dfc2020_baseline
