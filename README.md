@@ -1,6 +1,5 @@
 # LandCover_map_Transformers_SSL
 Object Recognition and Computer Vision project.  
-For the Swin-T(Transformers for Semantic Segmentation) and SSL parts of the project, we will probably reuse the code from: https://github.com/HSG-AIML/SSLTransformerRS
 
 ## Organisation tree
 
