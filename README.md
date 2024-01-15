@@ -3,6 +3,9 @@ Object Recognition and Computer Vision project.
 
 ## Organisation tree
 
+### Report.pdf
+This pdf file is the report made for the project of the MVA course "Object Recognition and Computer Vision" in January 2024. 
+
 ### Data
 In this folder should be placed the data. Flair1 data folder are organized into train, valid and test folders. 
 Flair1 data can be downloaded at https://ignf.github.io/FLAIR/. The data are taken from the department 71 and 34 (D071 and D034). It can not be uploaded on Github because it is too heavy.  
@@ -12,7 +15,8 @@ Sentinel2 data can be downloaded at https://ieee-dataport.org/competitions/2020-
 flair1_percentages_per_class contains plots of percentages per class for the flair1 data. The folder contains some one plot of prediction vs ground truth image, one confusion matrix for Swint+SSL and one plot of training validation curves against epochs. 
 
 ### Models 
-The pre-trained model for Swin-T + SSL should be donwloaded and put in this folder. Others important models can be saved in this folder. 
+The pre-trained model for Swin-T + SSL should be donwloaded and put in this folder. The Swin-T pre-trained model an be downloaded at https://drive.google.com/file/d/1e7QhC2-zoBFgb65yN1ADWBZLMShHOweY/view.  
+Others important models can be saved in this folder. 
 
 ### Src
 * configs contains configuration files
@@ -28,4 +32,4 @@ Imports might need additional work to be efficiently imported in notebooks.
 * UNet: https://github.com/lukasliebel/dfc2020_baseline
 * RESNETUNet: https://github.com/IGNF/FLAIR-1-AI-Challenge
 * SwinUNet: https://github.com/HuCaoFighting/Swin-Unet
-* Swint_SSL: https://github.com/HSG-AIML/SSLTransformerRS. The Swin-T pre-trained model an be downloaded at https://drive.google.com/file/d/1e7QhC2-zoBFgb65yN1ADWBZLMShHOweY/view
+* Swint_SSL: https://github.com/HSG-AIML/SSLTransformerRS. 
