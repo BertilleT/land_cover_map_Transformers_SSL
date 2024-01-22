@@ -1,10 +1,10 @@
 # LandCover_map_Transformers_SSL
-Object Recognition and Computer Vision project.  
+Deep Learning project.  
 
 ## Organisation tree
 
 ### Report.pdf
-This pdf file is the report made for the project of the MVA course "Object Recognition and Computer Vision" in January 2024. 
+This pdf file is the report made for the project of the MVA course "Deep Learning" in January 2024. 
 
 ### Data
 In this folder should be placed the data. Flair1 data folder are organized into train, valid and test folders. 
