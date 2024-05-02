@@ -1,10 +1,13 @@
 # LandCover_map_Transformers_SSL
-Deep Learning project.  
+Deep Learning and Object Recognition Computer Vision projects.  
 
 ## Organisation tree
 
-### Report.pdf
+### Report_DL.pdf
 This pdf file is the report made for the project of the MVA course "Deep Learning" in January 2024. 
+
+### Report_ORCV.pdf
+Report for the project of the MVA course "Object Recognition and Computer Vision" in January 2024. 
 
 ### Data
 In this folder should be placed the data. Flair1 data folder are organized into train, valid and test folders. 
@@ -29,7 +32,10 @@ Others important models can be saved in this folder.
 Imports might need additional work to be efficiently imported in notebooks. 
 
 ## Reused github
-* UNet: https://github.com/lukasliebel/dfc2020_baseline
-* RESNETUNet: https://github.com/IGNF/FLAIR-1-AI-Challenge
-* SwinUNet: https://github.com/HuCaoFighting/Swin-Unet
+* UNet: https://github.com/lukasliebel/dfc2020_baseline  
+
+* RESNETUNet: https://github.com/IGNF/FLAIR-1-AI-Challenge  
+
+* SwinUNet: https://github.com/HuCaoFighting/Swin-Unet  
+
 * Swint_SSL: https://github.com/HSG-AIML/SSLTransformerRS. 
